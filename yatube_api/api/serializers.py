@@ -3,9 +3,9 @@ import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
+from rest_framework.validators import UniqueTogetherValidator, ValidationError
 
 from posts.models import Comment, Follow, Group, Post, User
-from .exceptions import NoSelfFollow
 
 
 class Base64ImageField(serializers.ImageField):
@@ -46,20 +46,29 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class FollowSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
+        read_only=True,
+        slug_field='username',
+        default=serializers.CurrentUserDefault()
     )
     following = serializers.SlugRelatedField(
         queryset=User.objects.all(), read_only=False, slug_field='username'
     )
 
     class Meta:
-        fields = '__all__'
+        fields = ('user', 'following')
         model = Follow
         read_only_fields = ('user',)
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=['user', 'following'],
+                message='Такая подписка уже есть'
+            )
+        ]
 
     def validate(self, data):
         if self.context['request'].user == data['following']:
-            raise NoSelfFollow(
-                'На себя нельзя подписываться!'
+            raise ValidationError(
+                'На себя нельзя подписываться, даже если ты очень хорош!'
             )
         return data
