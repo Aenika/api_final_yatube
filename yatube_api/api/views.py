@@ -26,6 +26,7 @@ class PostViewSet(viewsets.ModelViewSet):
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
+    permission_classes = (permissions.AllowAny,)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -46,11 +47,12 @@ class FollowViewSet(CreateListViewSet):
     serializer_class = FollowSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('following__username', )
+    search_fields = ('$following__username', '$user__username',)
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = Follow.objects.filter(user=user)
+        queryset = Follow.objects.select_related('following').filter(
+            user=self.request.user
+        )
         return queryset
 
     def perform_create(self, serializer):
