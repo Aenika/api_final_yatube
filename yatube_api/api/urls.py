@@ -1,6 +1,6 @@
 from django.urls import include, path
 from rest_framework import routers
-import rest_framework_simplejwt.serializers as jwt
+import rest_framework_simplejwt.views as jwt
 
 from .views import CommentViewSet, FollowViewSet, GroupViewSet, PostViewSet
 
